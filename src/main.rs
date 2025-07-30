@@ -1,0 +1,21 @@
+mod goat;
+mod package_manager;
+mod cache;
+
+use std::process::exit;
+use goat::Goat;
+
+fn main() {
+    // Show all info level and above log messages in stdout.
+    env_logger::builder()
+        .format_timestamp(None)
+        .init();
+    
+    let system = match Goat::load() {
+        Ok(system) => system,
+        Err(e) => {
+            log::error!("{}", e);
+            exit(1);
+        }
+    };
+}
