@@ -5,6 +5,8 @@ use starlark::eval::Evaluator;
 use starlark::syntax::{AstModule, Dialect};
 use starlark::values::Value;
 
+use crate::get_str_var;
+
 pub struct PackageManager {
     /// The name of any applicable package manager binary.
     ///
@@ -17,19 +19,8 @@ pub struct PackageManager {
     pub full_system_update_command: String
 }
 
-/// Quickly extract a variable from a starlark module.
-macro_rules! get_str_var {
-    ($module:expr, $var:expr, $path:expr) => {
-        $module
-            .get($var)
-            .ok_or_else(|| format!("No '{}' section found in \"{}\"", $var, $path.display()))?
-            .unpack_str()
-            .ok_or_else(|| format!("Failed to parse '{}' value in \"{}\"", $var, $path.display()))
-    };
-}
-
 impl PackageManager {
-    pub fn from_file(path: &Path) -> Result<PackageManager, String> {
+    pub fn from_file(path: &Path) -> Result<Self, String> {
         // This is all according to https://docs.rs/starlark/latest/starlark/
         let ast: AstModule = AstModule::parse_file(path, &Dialect::Standard)
             .map_err(|e| format!("Failed to load package manager configuration file \"{}\", because: {}", path.display(), e))?;

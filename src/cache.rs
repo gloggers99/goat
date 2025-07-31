@@ -15,7 +15,7 @@ pub struct Cache {
 
 impl Cache {
     /// Load cache from a given file.
-    pub fn load_cache(path: &PathBuf) -> Result<Cache, String> {
+    pub fn load_cache(path: &PathBuf) -> Result<Self, String> {
         // I love map_err
         path.try_exists().map_err(|e| format!("Cache file doesn't exist: {}", e.to_string()))?;
 

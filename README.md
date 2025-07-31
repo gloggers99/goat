@@ -13,17 +13,13 @@ The following language is starlark. It's essentially embeddable python.
 ```python
 hostname = "goatmachine"
 
-packages = [
+# pkgs is a builtin function provided
+# by goat.
+packages = pkgs([
   "fastfetch",
   "git"
-]
+])
 
-users = [
-  User(
-    name="lucas",
-    groups=["wheel"]
-  )
-]
 ```
 
 ## Features

@@ -1,8 +1,6 @@
 hostname = "goatmachine"
-packages = [
+
+packages = pkgs([
     "neofetch",
     "git"
-]
-
-users = [
-]
+])

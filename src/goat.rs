@@ -1,21 +1,23 @@
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::collections::HashMap;
 use std::fs::{self, DirEntry};
 
 use crate::cache::Cache;
-
+use crate::config::Config;
 use crate::package_manager::PackageManager;
 
 /// The Goat struct represents the system in whole.
 pub struct Goat {
+    /// Important directories in a map for lookup & more.
     directories: HashMap<String, PathBuf>,
     cache: Cache,
-    package_manager: PackageManager
+    package_manager: PackageManager,
+    config: Config
 }
 
 impl Goat {
     /// Initialize the goat struct and confirm system vitals.
-    pub fn load() -> Result<Goat, String> {
+    pub fn load() -> Result<Self, String> {
         log::info!("System health check...");
 
         // Save important directories for lookup and in the future
@@ -72,7 +74,7 @@ impl Goat {
             None => {
                 log::warn!("Package manager config name not cached, detecting package manager and caching.");
 
-                // Get a list of every config file in the 
+                // Get a list of every config file in the
                 // package manager configuration directory.
                 let package_manager_configuration_paths: Vec<DirEntry>
                     = directories["package_manager_configuration_directory"]
@@ -82,7 +84,7 @@ impl Goat {
                         .map_err(|e| format!("Failed to read package manager configuration directory: {}", e.to_string()))?;
 
                 for package_manager_configuration_path in package_manager_configuration_paths.iter() {
-                    let package_manager_test = PackageManager::from_file(&package_manager_configuration_path.path()).unwrap();
+                    let package_manager_test = PackageManager::from_file(&package_manager_configuration_path.path())?;
                     if which::which(&package_manager_test.binary_name).is_ok() {
                         cache.package_manager_configuration_file = Some(package_manager_configuration_path
                                                                         .file_name()
@@ -97,10 +99,15 @@ impl Goat {
         // Dump cache back into cache file.
         cache.save_cache(&cache_file)?;
 
+        let config_file = directories["configuration_directory"].join("config.star");
+        
+        let config = Config::from_file(&config_file)?;
+        
         Ok(Goat {
             directories,
             cache,
-            package_manager: package_manager.ok_or_else(|| "Failed to locate applicable package manager configuration file".to_string())?
+            package_manager: package_manager.ok_or_else(|| "Failed to locate applicable package manager configuration file".to_string())?,
+            config
         })
     }
 }

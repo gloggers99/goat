@@ -1,6 +1,8 @@
 mod goat;
 mod package_manager;
 mod cache;
+mod config;
+mod starlark_goat;
 
 use std::process::exit;
 use goat::Goat;
@@ -10,7 +12,7 @@ fn main() {
     env_logger::builder()
         .format_timestamp(None)
         .init();
-    
+
     let system = match Goat::load() {
         Ok(system) => system,
         Err(e) => {
