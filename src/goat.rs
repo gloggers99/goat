@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use std::collections::HashMap;
 use std::fs::{self, DirEntry};
-
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::package_manager::PackageManager;
@@ -58,9 +57,12 @@ impl Goat {
         // Check for cached package manager value to skip
         // reading all configurations
 
+        log::info!("Loading cache...");
+        
         let cache_file = directories["cache_directory"].join("cache.json");
         if !cache_file.exists() {
-            std::fs::write(&cache_file, "{}\n").map_err(|e| format!("Failed to create basic cache file: {}", e.to_string()))?;
+            log::warn!("Cache file \"{}\" doesn't exist! Fixing...", cache_file.display());
+            fs::write(&cache_file, "{}\n").map_err(|e| format!("Failed to create basic cache file: {}", e.to_string()))?;
         }
 
         let mut cache = Cache::load_cache(&cache_file)?;
@@ -98,10 +100,13 @@ impl Goat {
 
         // Dump cache back into cache file.
         cache.save_cache(&cache_file)?;
+        
+        log::info!("Cache loaded!");
 
         let config_file = directories["configuration_directory"].join("config.star");
         
         let config = Config::from_file(&config_file)?;
+        
         
         Ok(Goat {
             directories,

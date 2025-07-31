@@ -1,9 +1,7 @@
 use std::path::Path;
-use starlark::environment::{Globals, GlobalsBuilder, Module};
+use starlark::environment::{GlobalsBuilder, Module};
 use starlark::eval::Evaluator;
 use starlark::syntax::{AstModule, Dialect};
-use starlark::values::{Value, UnpackValue};
-use starlark::values::list::UnpackList;
 
 use crate::{get_str_var, starlark_goat};
 
@@ -78,7 +76,7 @@ impl Config {
         // We use .map_err(...) on result types to map whatever the library deems an `Error`
         // to our functions result type which is a String. So if this function fails it will
         // return Err(String).
-        let res: Value = eval.eval_module(ast, &globals)
+        eval.eval_module(ast, &globals)
             .map_err(|e| format!("Failed to evaluate configuration file: \"{}\"", e))?;
         
         let mut config = Config::default();
