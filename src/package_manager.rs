@@ -17,6 +17,17 @@ pub struct PackageManager {
     pub full_system_update_command: String
 }
 
+/// Quickly extract a variable from a starlark module.
+macro_rules! get_str_var {
+    ($module:expr, $var:expr, $path:expr) => {
+        $module
+            .get($var)
+            .ok_or_else(|| format!("No '{}' section found in \"{}\"", $var, $path.display()))?
+            .unpack_str()
+            .ok_or_else(|| format!("Failed to parse '{}' value in \"{}\"", $var, $path.display()))
+    };
+}
+
 impl PackageManager {
     pub fn from_file(path: &Path) -> Result<PackageManager, String> {
         // This is all according to https://docs.rs/starlark/latest/starlark/
@@ -29,23 +40,9 @@ impl PackageManager {
         let res: Value = eval.eval_module(ast, &globals)
             .map_err(|e| format!("Failed to evaluate package manager configuration file: \"{}\"", e))?;
 
-        let binary_name = module
-            .get("binary_name")
-            .ok_or_else(|| format!("No 'binary_name' section found in \"{}\"", path.display()))?
-            .unpack_str()
-            .ok_or_else(|| format!("Failed to parse 'binary_name' value in \"{}\"", path.display()))?;
-
-        let install_command = module
-            .get("install_command")
-            .ok_or_else(|| format!("No 'install_command' section found in \"{}\"", path.display()))?
-            .unpack_str()
-            .ok_or_else(|| format!("Failed to parse 'install_command' value in \"{}\"", path.display()))?;
-
-        let full_system_update_command = module
-            .get("full_system_update_command")
-            .ok_or_else(|| format!("No 'full_system_update_command' section found in \"{}\"", path.display()))?
-            .unpack_str()
-            .ok_or_else(|| format!("Failed to parse 'full_system_update_command' value in \"{}\"", path.display()))?;
+        let binary_name = get_str_var!(module, "binary_name", path)?;
+        let install_command = get_str_var!(module, "install_command", path)?;
+        let full_system_update_command = get_str_var!(module, "full_system_update_command", path)?;
 
         Ok(PackageManager {
             binary_name: binary_name.to_owned(),

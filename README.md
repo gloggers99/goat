@@ -1,16 +1,14 @@
 <div align="center">
 
 <h1>goatOS</h1>
-<small>A declarative system configuration manager.</small>
+A declarative system configuration manager.
 
 </div>
-
----
 
 ## Example
 The `goat` ecosystem is similar to that of NixOS with several important differences.
 
-<small>The following language is starlark. It's essentially embeddable python.</small>
+The following language is starlark. It's essentially embeddable python.
 
 ```python
 hostname = "goatmachine"
