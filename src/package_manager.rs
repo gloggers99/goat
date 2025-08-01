@@ -1,7 +1,6 @@
-use std::path::Path;
 use anyhow::anyhow;
-use log::warn;
 use mlua::Lua;
+use std::path::Path;
 
 pub struct PackageManager {
     /// The name of any applicable package manager binary.
@@ -37,7 +36,6 @@ impl PackageManager {
         if !path.exists() {
             return Err(anyhow!("Package manager configuration file: \"{}\" does not exist", path.display()));
         }
-
 
         let config_script = std::fs::read_to_string(path)?;
         lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret package manager configuration file: {}", e))?;

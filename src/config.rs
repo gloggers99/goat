@@ -1,6 +1,5 @@
 use std::path::Path;
 use anyhow::anyhow;
-use log::warn;
 use mlua::{Lua, Value};
 // Note
 // This file has been heavily annotated for William Chastain
@@ -81,16 +80,11 @@ impl Config {
         }
 
         if let Ok(packages_value) = globals.get::<Value>("packages").map_err(|e| format!("{}", e)) {
-            let packages_list = match packages_value.as_table() {
-                Some(packages) => {
-                    packages.sequence_values::<String>()
+            if let Some(packages_list) = packages_value.as_table() {
+                config.packages = Some(packages_list.sequence_values::<String>()
                         .collect::<Result<Vec<_>, _>>()
-                        .map_err(|err| anyhow!("{}", err))?
-                }
-                None => return Err(anyhow!("Expected 'packages' in configuration to be a table")),
-            };
-
-            config.packages = Some(packages_list);
+                        .map_err(|err| anyhow!("{}", err))?)
+            }
         } 
         
         Ok(config)

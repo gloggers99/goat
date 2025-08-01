@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::collections::HashMap;
 use std::fs::{self, DirEntry};
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow};
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::package_manager::PackageManager;
@@ -10,14 +10,27 @@ use crate::package_manager::PackageManager;
 pub struct Goat {
     /// Important directories in a map for lookup & more.
     directories: HashMap<String, PathBuf>,
+    
+    /// Important files in a map for lookup & more.
+    /// 
+    /// The idea is to have the directory section joined with 
+    /// a file from the files hashmap. This allows for custom
+    /// directory setups later.
+    files: HashMap<String, PathBuf>,
+    
     cache: Cache,
+    
     package_manager: PackageManager,
+    
     config: Config
 }
 
 impl Goat {
     /// Initialize the goat struct and confirm system vitals.
-    pub fn load() -> anyhow::Result<Self> {
+    /// 
+    /// Running with the recache parameter set to true
+    /// will reset the cache files.
+    pub fn load(recache: bool) -> anyhow::Result<Self> {
         // Save important directories for lookup and in the future
         // custom directory locations.
         let directories: HashMap<String, PathBuf> = if cfg!(debug_assertions) {
@@ -40,6 +53,11 @@ impl Goat {
                 (String::from("package_manager_configuration_directory"), PathBuf::from("/var/goat/package_managers")),
             ])
         };
+        
+        let files: HashMap<String, PathBuf> = HashMap::from([
+            (String::from("config_file"), PathBuf::from("config.lua")),
+            (String::from("cache_file"), PathBuf::from("cache.json")),
+        ]);
 
         // Confirm all directories exist
         // and are actually directories.
@@ -54,9 +72,9 @@ impl Goat {
 
         // Check for cached package manager value to skip
         // reading all configurations
-
-        let cache_file = directories["cache_directory"].join("cache.json");
-        if !cache_file.exists() {
+        
+        let cache_file = directories["cache_directory"].join(&files["cache_file"]);
+        if !cache_file.exists() || recache {
             log::warn!("Cache file \"{}\" doesn't exist! Fixing...", cache_file.display());
             fs::write(&cache_file, "{}\n")?;
         }
@@ -97,12 +115,12 @@ impl Goat {
         
         log::info!("Cache loaded!");
 
-        let config_file = directories["configuration_directory"].join("config.lua");
-        
+        let config_file = directories["configuration_directory"].join(&files["config_file"]);
         let config = Config::from_file(&config_file)?;
         
         Ok(Goat {
             directories,
+            files,
             cache,
             package_manager: package_manager.ok_or_else(|| anyhow!("Failed to locate applicable package manager configuration file"))?,
             config

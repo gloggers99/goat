@@ -31,14 +31,7 @@ impl Cache {
     /// 
     /// This function will create the file if it does not exist.
     pub fn save_cache(&self, path: &PathBuf) -> anyhow::Result<()> {
-        match path.try_exists() {
-            Ok(_) => {},
-            Err(_) => {
-                std::fs::File::create(&path)?;
-            }
-        };
-
-        Ok(std::fs::write(
+        Ok(fs::write(
             path,
             serde_json::to_string(&self)?
         )?)
