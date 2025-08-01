@@ -1,4 +1,6 @@
 use std::path::Path;
+use anyhow::anyhow;
+use log::warn;
 use mlua::Lua;
 
 pub struct PackageManager {
@@ -29,23 +31,23 @@ pub struct PackageManager {
 }
 
 impl PackageManager {
-    pub fn from_file(path: &Path) -> Result<Self, String> {
+    pub fn from_file(path: &Path) -> anyhow::Result<Self> {
         let lua = Lua::new();
         
         if !path.exists() {
-            return Err(format!("Package manager configuration file: \"{}\" does not exist", path.display()));
+            return Err(anyhow!("Package manager configuration file: \"{}\" does not exist", path.display()));
         }
 
 
-        let config_script = std::fs::read_to_string(path).map_err(|err| format!("{}", err.to_string()))?;
-        lua.load(&config_script).exec().map_err(|e| format!("Failed to interpret package manager configuration file: {}", e))?;
+        let config_script = std::fs::read_to_string(path)?;
+        lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret package manager configuration file: {}", e))?;
 
         let globals = lua.globals();
 
-        let binary_name = globals.get("binary_name").map_err(|e| format!("{}", e))?;
-        let install_command = globals.get("install_command").map_err(|e| format!("{}", e))?;
-        let full_system_update_command = globals.get("full_system_update_command").map_err(|e| format!("{}", e))?;
-        let list_explicit_packages = globals.get("list_explicit_packages").map_err(|e| format!("{}", e))?;
+        let binary_name = globals.get("binary_name").map_err(|e| anyhow!("{}", e))?;
+        let install_command = globals.get("install_command").map_err(|e| anyhow!("{}", e))?;
+        let full_system_update_command = globals.get("full_system_update_command").map_err(|e| anyhow!("{}", e))?;
+        let list_explicit_packages = globals.get("list_explicit_packages").map_err(|e| anyhow!("{}", e))?;
         
         Ok(PackageManager {
             binary_name,

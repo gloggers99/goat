@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 use std::collections::HashMap;
 use std::fs::{self, DirEntry};
+use anyhow::{anyhow, Error};
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::package_manager::PackageManager;
@@ -16,7 +17,7 @@ pub struct Goat {
 
 impl Goat {
     /// Initialize the goat struct and confirm system vitals.
-    pub fn load() -> Result<Self, String> {
+    pub fn load() -> anyhow::Result<Self> {
         // Save important directories for lookup and in the future
         // custom directory locations.
         let directories: HashMap<String, PathBuf> = if cfg!(debug_assertions) {
@@ -45,8 +46,7 @@ impl Goat {
         for directory in directories.values() {
             if !directory.exists() || !directory.is_dir() {
                 log::warn!("Directory \"{}\" doesn't exist! Fixing...", directory.display());
-                fs::create_dir_all(directory)
-                    .map_err(|e| format!("Failed to create directory \"{}\": {}", directory.display(), e.to_string()))?;
+                fs::create_dir_all(directory)?;
             }
         }
 
@@ -58,7 +58,7 @@ impl Goat {
         let cache_file = directories["cache_directory"].join("cache.json");
         if !cache_file.exists() {
             log::warn!("Cache file \"{}\" doesn't exist! Fixing...", cache_file.display());
-            fs::write(&cache_file, "{}\n").map_err(|e| format!("Failed to create basic cache file: {}", e.to_string()))?;
+            fs::write(&cache_file, "{}\n")?;
         }
 
         let mut cache = Cache::load_cache(&cache_file)?;
@@ -76,10 +76,8 @@ impl Goat {
                 // package manager configuration directory.
                 let package_manager_configuration_paths: Vec<DirEntry>
                     = directories["package_manager_configuration_directory"]
-                        .read_dir()
-                        .map_err(|e| format!("Failed to read package manager configuration directory: {}", e.to_string()))?
-                        .collect::<Result<_, _>>()
-                        .map_err(|e| format!("Failed to read package manager configuration directory: {}", e.to_string()))?;
+                        .read_dir()?
+                        .collect::<Result<_, _>>()?;
 
                 for package_manager_configuration_path in package_manager_configuration_paths.iter() {
                     let package_manager_test = PackageManager::from_file(&package_manager_configuration_path.path())?;
@@ -87,7 +85,7 @@ impl Goat {
                         cache.package_manager_configuration_file = Some(package_manager_configuration_path
                                                                         .file_name()
                                                                         .into_string()
-                                                                        .map_err(|_| "Failed to convert package manager configuration path to string".to_string())?);
+                                                                        .map_err(|_| anyhow!("Failed to convert OsString to String. UTF-8?"))?);
                         package_manager = Some(package_manager_test);
                     }
                 }
@@ -106,7 +104,7 @@ impl Goat {
         Ok(Goat {
             directories,
             cache,
-            package_manager: package_manager.ok_or_else(|| "Failed to locate applicable package manager configuration file".to_string())?,
+            package_manager: package_manager.ok_or_else(|| anyhow!("Failed to locate applicable package manager configuration file"))?,
             config
         })
     }

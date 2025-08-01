@@ -15,14 +15,14 @@ pub struct Cache {
 
 impl Cache {
     /// Load cache from a given file.
-    pub fn load_cache(path: &PathBuf) -> Result<Self, String> {
+    pub fn load_cache(path: &PathBuf) -> anyhow::Result<Self> {
         // I love map_err
-        path.try_exists().map_err(|e| format!("Cache file doesn't exist: {}", e.to_string()))?;
+        path.try_exists()?;
 
         let contents
-            = fs::read_to_string(path).map_err(|e| format!("Failed to read cache file: {}", e.to_string()))?;
+            = fs::read_to_string(path)?;
         let json_contents: Cache
-            = serde_json::from_str(&contents).map_err(|e| format!("Failed to parse json from cache file: {}", e.to_string()))?;
+            = serde_json::from_str(&contents)?;
 
         Ok(json_contents)
     }
@@ -30,17 +30,17 @@ impl Cache {
     /// Save cache struct into a given file.
     /// 
     /// This function will create the file if it does not exist.
-    pub fn save_cache(&self, path: &PathBuf) -> Result<(), String> {
+    pub fn save_cache(&self, path: &PathBuf) -> anyhow::Result<()> {
         match path.try_exists() {
             Ok(_) => {},
             Err(_) => {
-                std::fs::File::create(&path).map_err(|e| format!("Failed to save cache file: {}", e.to_string()))?;
+                std::fs::File::create(&path)?;
             }
         };
 
-        std::fs::write(
+        Ok(std::fs::write(
             path,
-            serde_json::to_string(&self).map_err(|e| format!("Failed to save cache file: {}", e.to_string()))?
-        ).map_err(|e| format!("Failed to save cache file: {}", e))
+            serde_json::to_string(&self)?
+        )?)
     }
 }

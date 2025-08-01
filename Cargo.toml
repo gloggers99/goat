@@ -14,3 +14,5 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.141"
 # unistd which port for rust
 which = "8.0.0"
+# other
+anyhow = "1.0.98"

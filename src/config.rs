@@ -1,4 +1,6 @@
 use std::path::Path;
+use anyhow::anyhow;
+use log::warn;
 use mlua::{Lua, Value};
 // Note
 // This file has been heavily annotated for William Chastain
@@ -58,15 +60,17 @@ impl Config {
     // class constructor like in C++ or Python.
     
     /// Create a `Config` instance from a file path.
-    pub fn from_file(path: &Path) -> Result<Self, String> {
+    pub fn from_file(path: &Path) -> anyhow::Result<Self> {
         let lua = Lua::new();
         
         if !path.exists() {
-            return Err(format!("Config file: \"{}\" does not exist", path.display()))
+            return Err(anyhow!("Config file: \"{}\" does not exist", path.display()))
         }
         
-        let config_script = std::fs::read_to_string(path).map_err(|err| format!("{}", err.to_string()))?;
-        lua.load(&config_script).exec().map_err(|err| format!("Failed to interpret configuration file: {}", err))?;
+        let config_script = std::fs::read_to_string(path)?;
+        // The mlua library doesn't seem to be friendly with anyhow so we still need
+        // to use map_err on each Result returning function from them.
+        lua.load(&config_script).exec().map_err(|err| anyhow!("Failed to interpret configuration file: {}", err))?;
         
         let globals = lua.globals();
         
@@ -81,9 +85,9 @@ impl Config {
                 Some(packages) => {
                     packages.sequence_values::<String>()
                         .collect::<Result<Vec<_>, _>>()
-                        .map_err(|err| format!("{}", err))?
+                        .map_err(|err| anyhow!("{}", err))?
                 }
-                None => return Err("Expected 'packages' in configuration to be a table".into()),
+                None => return Err(anyhow!("Expected 'packages' in configuration to be a table")),
             };
 
             config.packages = Some(packages_list);
