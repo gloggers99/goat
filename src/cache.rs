@@ -8,7 +8,7 @@ pub struct Cache {
     /// used last by `goat` should be just
     /// the last part excluding parent paths.
     ///
-    /// Example: "pacman.star"
+    /// Example: "pacman.lua"
     #[serde(default)]
     pub package_manager_configuration_file: Option<String>
 }

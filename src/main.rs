@@ -2,7 +2,6 @@ mod goat;
 mod package_manager;
 mod cache;
 mod config;
-mod starlark_goat;
 
 use std::process::exit;
 use goat::Goat;

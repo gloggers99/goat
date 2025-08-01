@@ -1,10 +1,5 @@
 use std::path::Path;
-use starlark::environment::{GlobalsBuilder, Module};
-use starlark::eval::Evaluator;
-use starlark::syntax::{AstModule, Dialect};
-
-use crate::{get_str_var, starlark_goat};
-
+use mlua::{Lua, Value};
 // Note
 // This file has been heavily annotated for William Chastain
 // to learn common patterns I use when programming rust.
@@ -35,7 +30,7 @@ pub struct Config {
     /// The list of packages the user explicitly wants installed.
     /// Dependency packages will be pulled in implicitly by their package
     /// manager.
-    packages: Option<Vec<String>>
+    pub packages: Option<Vec<String>>
 }
 
 // Let's implement the `Default` trait for our Config struct.
@@ -64,32 +59,35 @@ impl Config {
     
     /// Create a `Config` instance from a file path.
     pub fn from_file(path: &Path) -> Result<Self, String> {
-        // This code is identical to PackageManager::from_file with different
-        // fields.
-
-        let ast: AstModule = AstModule::parse_file(path, &Dialect::Standard)
-            .map_err(|e| format!("Failed to load configuration file \"{}\", because: {}", path.display(), e))?;
-        let globals = GlobalsBuilder::new().with(starlark_goat::starlark_pkgs).build();
-        let module: Module = Module::new();
-        let mut eval: Evaluator = Evaluator::new(&module);
+        let lua = Lua::new();
         
-        // We use .map_err(...) on result types to map whatever the library deems an `Error`
-        // to our functions result type which is a String. So if this function fails it will
-        // return Err(String).
-        eval.eval_module(ast, &globals)
-            .map_err(|e| format!("Failed to evaluate configuration file: \"{}\"", e))?;
+        if !path.exists() {
+            return Err(format!("Config file: \"{}\" does not exist", path.display()))
+        }
+        
+        let config_script = std::fs::read_to_string(path).map_err(|err| format!("{}", err.to_string()))?;
+        lua.load(&config_script).exec().map_err(|err| format!("Failed to interpret configuration file: {}", err))?;
+        
+        let globals = lua.globals();
         
         let mut config = Config::default();
         
-        // If get_str_var returns Ok(&str) we will set the hostname to the
-        // specified string.
-        if let Ok(hostname) = get_str_var!(module, "hostname", path) {
-            config.hostname = hostname.to_owned();
+        if let Ok(hostname) = globals.get("hostname") {
+            config.hostname = hostname;
         }
 
-        if let Ok(packages_variable) = get_str_var!(module, "packages", path) {
-            config.packages = Some(packages_variable.split(',').map(String::from).collect());
-        }
+        if let Ok(packages_value) = globals.get::<Value>("packages").map_err(|e| format!("{}", e)) {
+            let packages_list = match packages_value.as_table() {
+                Some(packages) => {
+                    packages.sequence_values::<String>()
+                        .collect::<Result<Vec<_>, _>>()
+                        .map_err(|err| format!("{}", err))?
+                }
+                None => return Err("Expected 'packages' in configuration to be a table".into()),
+            };
+
+            config.packages = Some(packages_list);
+        } 
         
         Ok(config)
     }

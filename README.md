@@ -8,18 +8,15 @@ A declarative system configuration manager.
 ## Example
 The `goat` ecosystem is similar to that of NixOS with several important differences.
 
-The following language is starlark. It's essentially embeddable python.
+The following is lua.
 
-```python
-hostname = "goatmachine"
+```lua
+hostname = "goatOS"
 
-# pkgs is a builtin function provided
-# by goat.
-packages = pkgs([
+packages = {
   "fastfetch",
   "git"
-])
-
+}
 ```
 
 ## Features

@@ -17,8 +17,6 @@ pub struct Goat {
 impl Goat {
     /// Initialize the goat struct and confirm system vitals.
     pub fn load() -> Result<Self, String> {
-        log::info!("System health check...");
-
         // Save important directories for lookup and in the future
         // custom directory locations.
         let directories: HashMap<String, PathBuf> = if cfg!(debug_assertions) {
@@ -57,8 +55,6 @@ impl Goat {
         // Check for cached package manager value to skip
         // reading all configurations
 
-        log::info!("Loading cache...");
-        
         let cache_file = directories["cache_directory"].join("cache.json");
         if !cache_file.exists() {
             log::warn!("Cache file \"{}\" doesn't exist! Fixing...", cache_file.display());
@@ -103,10 +99,9 @@ impl Goat {
         
         log::info!("Cache loaded!");
 
-        let config_file = directories["configuration_directory"].join("config.star");
+        let config_file = directories["configuration_directory"].join("config.lua");
         
         let config = Config::from_file(&config_file)?;
-        
         
         Ok(Goat {
             directories,

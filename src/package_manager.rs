@@ -1,9 +1,5 @@
 use std::path::Path;
-use starlark::environment::{Globals, Module};
-use starlark::eval::Evaluator;
-use starlark::syntax::{AstModule, Dialect};
-
-use crate::get_str_var;
+use mlua::Lua;
 
 pub struct PackageManager {
     /// The name of any applicable package manager binary.
@@ -34,26 +30,28 @@ pub struct PackageManager {
 
 impl PackageManager {
     pub fn from_file(path: &Path) -> Result<Self, String> {
-        // This is all according to https://docs.rs/starlark/latest/starlark/
-        let ast: AstModule = AstModule::parse_file(path, &Dialect::Standard)
-            .map_err(|e| format!("Failed to load package manager configuration file \"{}\", because: {}", path.display(), e))?;
-        let globals: Globals = Globals::standard();
-        let module: Module = Module::new();
-        let mut eval: Evaluator = Evaluator::new(&module);
+        let lua = Lua::new();
+        
+        if !path.exists() {
+            return Err(format!("Package manager configuration file: \"{}\" does not exist", path.display()));
+        }
 
-        eval.eval_module(ast, &globals)
-            .map_err(|e| format!("Failed to evaluate package manager configuration file: \"{}\"", e))?;
 
-        let binary_name = get_str_var!(module, "binary_name", path)?;
-        let install_command = get_str_var!(module, "install_command", path)?;
-        let full_system_update_command = get_str_var!(module, "full_system_update_command", path)?;
-        let list_explicit_packages = get_str_var!(module, "list_explicit_packages", path)?;
+        let config_script = std::fs::read_to_string(path).map_err(|err| format!("{}", err.to_string()))?;
+        lua.load(&config_script).exec().map_err(|e| format!("Failed to interpret package manager configuration file: {}", e))?;
 
+        let globals = lua.globals();
+
+        let binary_name = globals.get("binary_name").map_err(|e| format!("{}", e))?;
+        let install_command = globals.get("install_command").map_err(|e| format!("{}", e))?;
+        let full_system_update_command = globals.get("full_system_update_command").map_err(|e| format!("{}", e))?;
+        let list_explicit_packages = globals.get("list_explicit_packages").map_err(|e| format!("{}", e))?;
+        
         Ok(PackageManager {
-            binary_name: binary_name.to_owned(),
-            install_command: install_command.to_owned(),
-            full_system_update_command: full_system_update_command.to_owned(),
-            list_explicit_packages: list_explicit_packages.to_owned()
+            binary_name,
+            install_command,
+            full_system_update_command,
+            list_explicit_packages
         })
     }
 }

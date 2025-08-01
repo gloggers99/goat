@@ -7,8 +7,8 @@ edition = "2024"
 # logging
 log = "0.4.27"
 env_logger = "0.11.8"
-# starlark
-starlark = "0.13.0"
+# lua
+mlua = { version = "0.11.1", features = ["lua54"] }
 # json stuff
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.141"
