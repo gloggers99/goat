@@ -24,15 +24,13 @@ struct Args {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     
-    print!("{}", args.rebuild);
-    
     // Show all info level and above log messages in stdout.
     env_logger::Builder::from_env(env_logger::Env::default()
         .default_filter_or("info"))
         .format_timestamp(None)
         .init();
 
-    let _system = match Goat::load(args.recache) {
+    let system = match Goat::load(args.recache) {
         Ok(system) => system,
         Err(e) => {
             log::error!("{}", e);

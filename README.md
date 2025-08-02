@@ -1,6 +1,6 @@
 <div align="center">
 
-```
+```lua
 
                                                # ###       #######    
                                              /  /###     /       ###  
@@ -24,7 +24,7 @@
 
 ```
 
-An opinionated integrated declarative system configuration manager.
+A meta-distribution with a declarative system configuration.
 
 </div>
 
@@ -33,6 +33,7 @@ An opinionated integrated declarative system configuration manager.
   * [Why](#why)
   * [Example](#example)
   * [Features](#features)
+  * [Contributing](#contributing)
   * [Authors](#authors)
 <!-- TOC -->
 
@@ -114,6 +115,18 @@ This list is meant to keep track of the status of features we are going to add.
   - [ ] Package manager masking
 
 LOTS more is planned but this is just the groundwork for now.
+
+## Contributing
+
+We are very strict (not really) on our Rust code:
+
+- NO `.unwrap()`'s on any pull requests. The only time you should be using
+unwrap is for testing code.
+- Use `anyhow::Result` for result types. use `.map_err(...)` for conflicting
+types.
+
+That's pretty much it. Just keep your code clean and try to leave docstrings
+as much as possible.
 
 ## Authors
 

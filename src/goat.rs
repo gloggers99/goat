@@ -25,6 +25,20 @@ pub struct Goat {
     config: Config
 }
 
+/// Generate a config.lua file
+pub fn generate_system_config(package_manager: &PackageManager, path: &PathBuf) -> anyhow::Result<()> {
+    let explicit_packages: String = package_manager
+        .explicit_packages()?
+        .iter()
+        .map(|package| format!("    \"{}\"", package))
+        .collect::<Vec<String>>()
+        .join(",\n");
+    
+    fs::write(path, format!("packages = {{\n{}\n}}", explicit_packages))?;
+    
+    Ok(())
+}
+
 impl Goat {
     /// Initialize the goat struct and confirm system vitals.
     /// 
@@ -56,7 +70,7 @@ impl Goat {
         
         let files: HashMap<String, PathBuf> = HashMap::from([
             (String::from("config_file"), PathBuf::from("config.lua")),
-            (String::from("cache_file"), PathBuf::from("cache.json")),
+            (String::from("cache_file"), PathBuf::from("cache.json"))
         ]);
 
         // Confirm all directories exist
@@ -110,20 +124,30 @@ impl Goat {
             }
         };
 
+        let package_manager = package_manager.ok_or_else(|| anyhow!("Failed to locate applicable package manager configuration file"))?;
+        
         // Dump cache back into cache file.
         cache.save_cache(&cache_file)?;
+        
         
         log::info!("Cache loaded!");
 
         let config_file = directories["configuration_directory"].join(&files["config_file"]);
-        let config = Config::from_file(&config_file)?;
+        let config = match Config::from_file(&config_file) {
+            Ok(config) => config,
+            Err(_) => {
+                generate_system_config(&package_manager, &config_file)?;
+                Config::from_file(&config_file)?
+            }
+        };
         
         Ok(Goat {
             directories,
             files,
             cache,
-            package_manager: package_manager.ok_or_else(|| anyhow!("Failed to locate applicable package manager configuration file"))?,
+            package_manager,
             config
         })
     }
+    
 }

@@ -1,6 +1,8 @@
+use std::collections::HashSet;
 use anyhow::anyhow;
 use mlua::Lua;
 use std::path::Path;
+use std::process::Command;
 
 pub struct PackageManager {
     /// The name of any applicable package manager binary.
@@ -53,5 +55,55 @@ impl PackageManager {
             full_system_update_command,
             list_explicit_packages
         })
+    }
+    
+    /// Get a Vec<String> of explicitly installed packages.
+    pub fn explicit_packages(&self) -> anyhow::Result<Vec<String>> {
+        let parts = self.list_explicit_packages.split_whitespace();
+        let args: Vec<&str> = parts.collect();
+        
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(&self.list_explicit_packages)
+            .output()?;
+        
+        // Theoretically this should be safe unless the package
+        // manager's output is something weird like non UTF-8.
+        let stdout = String::from_utf8(output.stdout)?;
+        
+        Ok(stdout.split_whitespace().map(|x| x.to_owned()).collect())
+    }
+    
+    /// Install a list of packages using the PackageManager specification
+    pub fn install(&self, packages: Vec<&str>) -> anyhow::Result<()> {
+        let command_parts = self.full_system_update_command.split_whitespace();
+        
+        // Filter out explicitly installed packages
+        let installed_packages: HashSet<String> = self.explicit_packages()?.into_iter().collect();
+        
+        let packages: Vec<&str> = packages
+            .into_iter()
+            .filter(|package| !installed_packages.contains(*package))
+            .collect();
+        // Join all packages into a single space-separated string
+        let packages = packages.join(" ");
+
+        // Format the command string with the packages
+        let command_str = self.install_command.replace("{}", &packages);
+
+        let mut parts = command_str.split_whitespace();
+        let cmd = parts.next().ok_or_else(|| anyhow!("Install command is empty"))?;
+        let args: Vec<&str> = parts.collect();
+
+        let output = Command::new(cmd)
+            .args(&args)
+            .output()
+            .map_err(|e| anyhow!("Failed to execute install command: {}", e))?;
+
+        if !output.status.success() {
+            return Err(anyhow!("Install command failed with status: {}", output.status));
+        }
+        
+        Ok(())
     }
 }

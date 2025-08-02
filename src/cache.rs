@@ -16,7 +16,6 @@ pub struct Cache {
 impl Cache {
     /// Load cache from a given file.
     pub fn load_cache(path: &PathBuf) -> anyhow::Result<Self> {
-        // I love map_err
         path.try_exists()?;
 
         let contents
