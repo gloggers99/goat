@@ -2,6 +2,7 @@ mod goat;
 mod package_manager;
 mod cache;
 mod config;
+mod goat_lua;
 
 use std::process::exit;
 use clap::Parser;

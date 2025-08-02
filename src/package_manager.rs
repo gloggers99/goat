@@ -3,6 +3,7 @@ use anyhow::anyhow;
 use mlua::Lua;
 use std::path::Path;
 use std::process::Command;
+use crate::{goat_lua, include_custom_runtime};
 
 pub struct PackageManager {
     /// The name of any applicable package manager binary.
@@ -40,14 +41,19 @@ impl PackageManager {
         }
 
         let config_script = std::fs::read_to_string(path)?;
-        lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret package manager configuration file: {}", e))?;
 
         let globals = lua.globals();
+        include_custom_runtime!(lua, globals);
+        
+        lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret package manager configuration file: {}", e))?;
+
 
         let binary_name = globals.get("binary_name").map_err(|e| anyhow!("{}", e))?;
         let install_command = globals.get("install_command").map_err(|e| anyhow!("{}", e))?;
         let full_system_update_command = globals.get("full_system_update_command").map_err(|e| anyhow!("{}", e))?;
         let list_explicit_packages = globals.get("list_explicit_packages").map_err(|e| anyhow!("{}", e))?;
+        
+        println!("{}", binary_name);
         
         Ok(PackageManager {
             binary_name,

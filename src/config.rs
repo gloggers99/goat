@@ -1,6 +1,7 @@
 use std::path::Path;
 use anyhow::anyhow;
 use mlua::{Lua, Value};
+use crate::{goat_lua, include_custom_runtime, lua_extract_string_variable};
 
 /// `goat`'s configuration file specification.
 /// 
@@ -29,16 +30,6 @@ impl Default for Config {
     }
 }
 
-/// Quickly extract a lua variable and dump 
-/// it into the config if it exists.
-macro_rules! lua_extract_string_variable {
-    ($name:ident, $globals:expr, $config:expr) => {
-        if let Ok(x) = $globals.get(stringify!($name)) {
-            $config.$name = x;
-        }
-    };
-}
-
 impl Config {
     /// Create a `Config` instance from a file path.
     pub fn from_file(path: &Path) -> anyhow::Result<Self> {
@@ -49,11 +40,13 @@ impl Config {
         }
         
         let config_script = std::fs::read_to_string(path)?;
+
+        let globals = lua.globals();
+        include_custom_runtime!(lua, globals);
+        
         // The mlua library doesn't seem to be friendly with anyhow so we still need
         // to use map_err on each Result returning function from them.
-        lua.load(&config_script).exec().map_err(|err| anyhow!("Failed to interpret configuration file: \n{}\n", err))?;
-        
-        let globals = lua.globals();
+        lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret configuration file: \n{}\n", e))?;
         
         let mut config = Config::default();
         
