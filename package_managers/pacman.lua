@@ -14,3 +14,7 @@ if program_exists("paru") then
     full_system_update_command = "paru -Syu"
     list_explicit_packages = "paru -Qe | cut -d ' ' -f1"
 end
+
+core_packages = {
+    "base"
+}

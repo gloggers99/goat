@@ -52,7 +52,7 @@ impl Config {
         
         lua_extract_string_variable!(hostname, globals, config);
 
-        if let Ok(packages_value) = globals.get::<Value>("packages").map_err(|e| format!("{}", e)) {
+        if let Ok(packages_value) = globals.get::<Value>("packages").map_err(|e| anyhow!("{}", e)) {
             if let Some(packages_list) = packages_value.as_table() {
                 config.packages = Some(packages_list.sequence_values::<String>()
                         .collect::<Result<Vec<_>, _>>()

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use anyhow::anyhow;
-use mlua::Lua;
+use mlua::{Lua, Value};
 use std::path::Path;
 use std::process::Command;
 use crate::{goat_lua, include_custom_runtime};
@@ -29,7 +29,12 @@ pub struct PackageManager {
     /// command for.
     /// 
     /// ex: `pacman -Qe | cut -d ' ' -f1`
-    list_explicit_packages: String
+    list_explicit_packages: String,
+    
+    /// A list of packages REQUIRED to be installed by the package manager.
+    /// 
+    /// ex: pacman has "core" and "linux"/"linux-zen"
+    core_packages: Vec<String>
 }
 
 impl PackageManager {
@@ -53,13 +58,24 @@ impl PackageManager {
         let full_system_update_command = globals.get("full_system_update_command").map_err(|e| anyhow!("{}", e))?;
         let list_explicit_packages = globals.get("list_explicit_packages").map_err(|e| anyhow!("{}", e))?;
         
-        println!("{}", binary_name);
+        let mut core_packages: Vec<String> = vec![];
+        
+        if let Ok(core_packages_value) = globals.get::<Value>("core_packages") {
+            if let Some(core_packages_table) = core_packages_value.as_table() {
+                core_packages = core_packages_table.sequence_values::<String>()
+                    .collect::<Result<Vec<_>, _>>()
+                    .map_err(|e| anyhow!("{}", e))?
+            }
+        }
+        
+        println!("{:?}", core_packages);
         
         Ok(PackageManager {
             binary_name,
             install_command,
             full_system_update_command,
-            list_explicit_packages
+            list_explicit_packages,
+            core_packages
         })
     }
     
