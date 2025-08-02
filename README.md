@@ -21,7 +21,7 @@
    ####   ###                                         \)              
  /######  /#                                                          
 /     ###/                                                            
-
+by Lucas Marta and William Chastain
 ```
 
 A meta-distribution with a declarative system configuration.

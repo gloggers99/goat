@@ -40,14 +40,8 @@ pub fn generate_system_config(package_manager: &PackageManager, path: &PathBuf) 
 }
 
 impl Goat {
-    /// Initialize the goat struct and confirm system vitals.
-    /// 
-    /// Running with the recache parameter set to true
-    /// will reset the cache files.
-    pub fn load(recache: bool) -> anyhow::Result<Self> {
-        // Save important directories for lookup and in the future
-        // custom directory locations.
-        let directories: HashMap<String, PathBuf> = if cfg!(debug_assertions) {
+    pub fn get_directories() -> HashMap<String, PathBuf> {
+        if cfg!(debug_assertions) {
             // DEBUG MODE DIRECTORIES
             HashMap::from([
                 // Location for user configuration.
@@ -66,13 +60,17 @@ impl Goat {
                 // Location of package manager configuration files.
                 (String::from("package_manager_configuration_directory"), PathBuf::from("/var/goat/package_managers")),
             ])
-        };
-        
-        let files: HashMap<String, PathBuf> = HashMap::from([
+        }
+    }
+    
+    pub fn get_files() -> HashMap<String, PathBuf> {
+        HashMap::from([
             (String::from("config_file"), PathBuf::from("config.lua")),
             (String::from("cache_file"), PathBuf::from("cache.json"))
-        ]);
+        ])
+    }
 
+    pub fn check_directories(directories: &HashMap<String, PathBuf>) -> anyhow::Result<()> {
         // Confirm all directories exist
         // and are actually directories.
         for directory in directories.values() {
@@ -82,14 +80,29 @@ impl Goat {
             }
         }
 
-        log::info!("System health check complete!");
+        Ok(())
+    }
+
+    /// Initialize the goat struct and confirm system vitals.
+    /// 
+    /// Running with the recache parameter set to true
+    /// will reset the cache files.
+    pub fn load(recache: bool) -> anyhow::Result<Self> {
+        // Start: System health check
+        let directories = Self::get_directories();
+        let files = Self::get_files();
+        
+        Self::check_directories(&directories)?;
+        // log::info!("System health check complete!");
+        
+        // End: System health check
 
         // Check for cached package manager value to skip
         // reading all configurations
         
         let cache_file = directories["cache_directory"].join(&files["cache_file"]);
         if !cache_file.exists() || recache {
-            log::warn!("Cache file \"{}\" doesn't exist! Fixing...", cache_file.display());
+            log::warn!("Recaching \"{}\"...", cache_file.display());
             fs::write(&cache_file, "{}\n")?;
         }
 
@@ -104,8 +117,7 @@ impl Goat {
             None => {
                 log::warn!("Package manager config name not cached, detecting package manager and caching.");
 
-                // Get a list of every config file in the
-                // package manager configuration directory.
+                // Get a list of every config file in the package manager configuration directory.
                 let package_manager_configuration_paths: Vec<DirEntry>
                     = directories["package_manager_configuration_directory"]
                         .read_dir()?
@@ -129,17 +141,13 @@ impl Goat {
         // Dump cache back into cache file.
         cache.save_cache(&cache_file)?;
         
-        
-        log::info!("Cache loaded!");
-
         let config_file = directories["configuration_directory"].join(&files["config_file"]);
-        let config = match Config::from_file(&config_file) {
-            Ok(config) => config,
-            Err(_) => {
-                generate_system_config(&package_manager, &config_file)?;
-                Config::from_file(&config_file)?
-            }
-        };
+        if !config_file.exists() {
+            log::warn!("Generating configuration file \"{}\"...", cache_file.display());
+            generate_system_config(&package_manager, &config_file)?;
+        }
+        
+        let config = Config::from_file(&config_file)?;
         
         Ok(Goat {
             directories,

@@ -51,7 +51,7 @@ impl Config {
         let config_script = std::fs::read_to_string(path)?;
         // The mlua library doesn't seem to be friendly with anyhow so we still need
         // to use map_err on each Result returning function from them.
-        lua.load(&config_script).exec().map_err(|err| anyhow!("Failed to interpret configuration file: {}", err))?;
+        lua.load(&config_script).exec().map_err(|err| anyhow!("Failed to interpret configuration file: \n{}\n", err))?;
         
         let globals = lua.globals();
         
