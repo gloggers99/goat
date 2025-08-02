@@ -25,8 +25,12 @@ pub fn program_exists(program: &str) -> bool{
 #[macro_export]
 macro_rules! include_custom_runtime {
     ($lua:ident, $globals:ident) => {
-        $globals.set("program_exists", $lua.create_function(|_, program: String| {
-            Ok(goat_lua::program_exists(&program))
-        }).unwrap()).map_err(|e| anyhow!("{}", e.to_string()))?;
+        {
+            let goat_table = $lua.create_table().map_err(|e| anyhow!("{}", e.to_string()))?;
+            goat_table.set("program_exists", $lua.create_function(|_, program: String| {
+                Ok(goat_lua::program_exists(&program))
+            }).unwrap()).map_err(|e| anyhow!("{}", e.to_string()))?;
+            $globals.set("goat", goat_table).map_err(|e| anyhow!("{}", e.to_string()))?;
+        }
     };
 }

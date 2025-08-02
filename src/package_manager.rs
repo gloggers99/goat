@@ -68,8 +68,6 @@ impl PackageManager {
             }
         }
         
-        println!("{:?}", core_packages);
-        
         Ok(PackageManager {
             binary_name,
             install_command,
