@@ -1,9 +1,10 @@
 use std::collections::HashSet;
 use anyhow::anyhow;
 use mlua::{Lua, Value};
-use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
 use crate::{goat_lua, include_custom_runtime};
+use crate::from_file::FromFile;
 
 pub struct PackageManager {
     /// The name of any applicable package manager binary.
@@ -37,10 +38,10 @@ pub struct PackageManager {
     core_packages: Vec<String>
 }
 
-impl PackageManager {
-    pub fn from_file(path: &Path) -> anyhow::Result<Self> {
+impl FromFile for PackageManager {
+    fn from_file(path: &PathBuf) -> anyhow::Result<Self> {
         let lua = Lua::new();
-        
+
         if !path.exists() {
             return Err(anyhow!("Package manager configuration file: \"{}\" does not exist", path.display()));
         }
@@ -49,7 +50,7 @@ impl PackageManager {
 
         let globals = lua.globals();
         include_custom_runtime!(lua, globals);
-        
+
         lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret package manager configuration file: {}", e))?;
 
 
@@ -57,9 +58,9 @@ impl PackageManager {
         let install_command = globals.get("install_command").map_err(|e| anyhow!("{}", e))?;
         let full_system_update_command = globals.get("full_system_update_command").map_err(|e| anyhow!("{}", e))?;
         let list_explicit_packages = globals.get("list_explicit_packages").map_err(|e| anyhow!("{}", e))?;
-        
+
         let mut core_packages: Vec<String> = vec![];
-        
+
         if let Ok(core_packages_value) = globals.get::<Value>("core_packages") {
             if let Some(core_packages_table) = core_packages_value.as_table() {
                 core_packages = core_packages_table.sequence_values::<String>()
@@ -67,7 +68,7 @@ impl PackageManager {
                     .map_err(|e| anyhow!("{}", e))?
             }
         }
-        
+
         Ok(PackageManager {
             binary_name,
             install_command,
@@ -76,8 +77,13 @@ impl PackageManager {
             core_packages
         })
     }
-    
-    /// Get a Vec<String> of explicitly installed packages.
+
+    fn get_binary_name(&self) -> &str {
+        &self.binary_name
+    }
+}
+impl PackageManager {
+/// Get a Vec<String> of explicitly installed packages.
     pub fn explicit_packages(&self) -> anyhow::Result<Vec<String>> {
         let parts = self.list_explicit_packages.split_whitespace();
         let args: Vec<&str> = parts.collect();

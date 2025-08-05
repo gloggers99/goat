@@ -10,7 +10,10 @@ pub struct Cache {
     ///
     /// Example: "pacman.lua"
     #[serde(default)]
-    pub package_manager_configuration_file: Option<String>
+    pub package_manager_configuration_file: Option<String>,
+    
+    #[serde(default)]
+    pub service_manager_configuration_file: Option<String>
 }
 
 impl Cache {

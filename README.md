@@ -26,6 +26,10 @@
 
 A meta-distribution with a declarative system configuration.
 
+![Rust](https://img.shields.io/badge/rust-%23000000.svg?style=for-the-badge&logo=rust&logoColor=white)
+![Lua](https://img.shields.io/badge/lua-%232C2D72.svg?style=for-the-badge&logo=lua&logoColor=white)
+![Linux](https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black)
+
 </div>
 
 <!-- TOC -->
@@ -51,8 +55,8 @@ A: Nope. During `goat`'s installation it will compile your current
 distro settings like your manually installed packages, running services, users, and more.
 
 
-\* non-supported distros need a package manager configuration interface created.
-This is a very simple process.
+\* non-supported distros need a package manager configuration interface created, 
+along with one for your service manager. This is a very simple process.
 
 ## Why
 
@@ -91,6 +95,28 @@ packages = {
 }
 ```
 
+`goat` even provides a custom lua runtime library! Similar to neovim.
+```lua
+
+hostname = "goatOS"
+
+-- This is one of the functions provided.
+-- Under the hood these functions run rust
+-- code so theoretically it should be 
+-- blazing fast.
+if goat.program_exists("bash") then
+  print("Bash is on your computer!")
+end
+```
+
+> [!CAUTION]
+> Copying other user configurations will put you at risk of
+> arbitrary code running on your computer! More safeguards will 
+> be put in place to prevent things like `os.execute` & more.
+> PLEASE read through other user's configurations before using them.
+> We are not liable for any damage someone's configuration does
+> to your system.
+
 ## Features
 
 This list is meant to keep track of the status of features we are going to add.
@@ -124,6 +150,7 @@ We are very strict (not really) on our Rust code:
 unwrap is for testing code.
 - Use `anyhow::Result` for result types. use `.map_err(...)` for conflicting
 types.
+- Please for the love of god don't rely on ChatGPT or Copilot generated code
 
 That's pretty much it. Just keep your code clean and try to leave docstrings
 as much as possible.

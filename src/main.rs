@@ -3,6 +3,8 @@ mod package_manager;
 mod cache;
 mod config;
 mod goat_lua;
+mod service_manager;
+mod from_file;
 
 use std::process::exit;
 use clap::Parser;
@@ -13,9 +15,9 @@ use goat::Goat;
           about = "System configuration manager",
           long_about = None)]
 struct Args {
-    /// Rebuild the system configuration
+    /// Sync the system configuration
     #[arg(short, long)]
-    rebuild: bool,
+    sync: bool,
     
     /// Delete all cache files before processing anything else
     #[arg(short='C', long)]
@@ -38,6 +40,11 @@ fn main() -> anyhow::Result<()> {
             exit(1);
         }
     };
+    
+    if args.sync {
+        println!("goat :: Syncing system...");
+        system.sync()?;
+    }
     
     Ok(())
 }
