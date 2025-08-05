@@ -33,6 +33,7 @@ A meta-distribution with a declarative system configuration.
 </div>
 
 <!-- TOC -->
+  * [Fun Screenshots](#fun-screenshots)
   * [What](#what)
   * [Why](#why)
   * [Example](#example)
@@ -40,6 +41,10 @@ A meta-distribution with a declarative system configuration.
   * [Contributing](#contributing)
   * [Authors](#authors)
 <!-- TOC -->
+
+## Fun Screenshots
+
+![](./images/2025-08-05-151242_2560x1600_scrot.png)
 
 ## What
 
