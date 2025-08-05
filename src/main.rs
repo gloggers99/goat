@@ -42,8 +42,9 @@ fn main() -> anyhow::Result<()> {
     };
     
     if args.sync {
-        println!("goat :: Syncing system...");
+        log::info!("Syncing system...");
         system.sync()?;
+        log::info!("Sync complete.");
     }
     
     Ok(())

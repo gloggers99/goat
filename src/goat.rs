@@ -3,7 +3,9 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::fs::{self, DirEntry};
 use std::hash::Hash;
+use std::process::Command;
 use anyhow::{anyhow};
+use nix::unistd::Uid;
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::from_file::FromFile;
@@ -23,11 +25,8 @@ pub struct Goat {
     files: HashMap<String, PathBuf>,
     
     cache: Cache,
-    
     package_manager: PackageManager,
-    
     service_manager: ServiceManager,
-    
     config: Config
 }
 
@@ -81,8 +80,7 @@ impl Goat {
     }
 
     pub fn check_directories(directories: &HashMap<String, PathBuf>) -> anyhow::Result<()> {
-        // Confirm all directories exist
-        // and are actually directories.
+        // Confirm all directories exist and are actually directories.
         for directory in directories.values() {
             if !directory.exists() || !directory.is_dir() {
                 log::warn!("Directory \"{}\" doesn't exist! Fixing...", directory.display());
@@ -138,6 +136,10 @@ impl Goat {
     /// Running with the recache parameter set to true
     /// will reset the cache files.
     pub fn load(recache: bool) -> anyhow::Result<Self> {
+        if !Uid::effective().is_root() {
+            return Err(anyhow!("Goat must be ran with root privileges!"));
+        }
+        
         let directories = Self::get_directories();
         let files = Self::get_files();
         
@@ -207,16 +209,19 @@ impl Goat {
     pub fn sync(&self) -> anyhow::Result<()> {
         // TODO: We don't want a halfway synced system so in the future we need to containerize our
         //       sync so if an error is thrown we cancel the build and have no side effects.
-        fs::write(Path::new("/etc/hostname"), format!("{}", self.config.hostname))?;
         
-        // TODO: Reload hostname service
-        
-        // systemd: hostnamectl set-hostname "$(cat /etc/hostname)"
-        // openrc: sudo rc-service hostname restart
-        
-        // TODO: Service handling. Service handling will need to be added similar to how package
-        //       managers are handled. A systemd.lua file will need to be created with a spec,
-        //       along with an openrc.lua and more in the future.
+        let current_hostname = fs::read_to_string("/etc/hostname")?.trim().to_owned();
+        if current_hostname != self.config.hostname {
+            fs::write(Path::new("/etc/hostname"), format!("{}\n", self.config.hostname))?;
+
+            log::warn!("Changing the hostname will take effect next reboot! See issue #1 on github.")
+            // TODO: Do some testing on changing the hostname with systemd as it tends to break 
+            //       lots of things like the X server and dbus.
+            
+            //if !Command::new("sh").arg("-c").arg(&self.service_manager.hostname_reload_command).output()?.status.success() {
+            //    return Err(anyhow!("Failed to run \"sh -c {}\"", self.service_manager.hostname_reload_command))
+            //}
+        }
         
         Ok(())
     }

@@ -12,7 +12,7 @@ pub struct ServiceManager {
     /// used for commands but to confirm the existence of this specific service manager.
     pub binary_name: String,
     /// The command to run to reload the hostname.
-    hostname_reload_command: String
+    pub hostname_reload_command: String
 }
 
 impl FromFile for ServiceManager {

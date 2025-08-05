@@ -1,4 +1,4 @@
-hostname = "goatOS"
+hostname = "goatOSTest"
 
 packages = {
     "fastfetch",
