@@ -83,8 +83,10 @@ to find out a specific config option or use the nix repl...
 
 The point of this "essay" isn't to de-value NixOS but to highlight the fantastic
 idea of a declarative system configuration. That is exactly what `goat` attempts
-to replicate without all the baggage and inconvenience of NixOS. (sorry NixOS
-lovers)
+to replicate without the extra complexity/overhead of NixOS. (sorry NixOS lovers)
+
+(from my personal experience! NixOS might be perfect for you and `goat` might be
+terrible for your usecase!)
 
 ~ Lucas Marta
 
@@ -128,28 +130,22 @@ end
 
 ## Features
 
-This list is meant to keep track of the status of features we are going to add.
+Here are the features currently supported and features planned.
 
-- [ ] Automatic system healing
-  - Because `goat` is a wrapper over your ENTIRE operating system,
-    it is critical that it checks the vitality of the system. This
-    means that several directories will be checked and restored and
-    backed up every time `goat` is executed.
-  - [X] Filesystem structure check
-  - [ ] Restoration of backups on command
-  - [ ] Automatic backup of `goat` controlled directories (like /home/user/.config)
+- [X] Health check
+  - [X] Fix `goat` directories (`/etc/goat`, `/var/goat/`, etc.)
+  - [X] Generates config based on current running system if accidentally deleted or one doesn't exist
+- [X] Declarative configuration file
+  - [X] Hostname
+  - [X] Package management
+  - [ ] Service management
+  - [ ] User management
+  - [ ] Dotfile management
+  - [ ] Arbitrary file management
 - [X] Cache
-- [ ] Package management
-  - Just like NixOS, it is frowned upon to install packages manually
-    as it directly ignores the declarative features of NixOS. We have
-    to mask the systems normal package manager behind a warning screen
-    and handle all package installations.
-  - [X] Modular package manager declarations
-    - For custom package manager declarations
-  - [X] Package manager detection
-  - [ ] Package manager masking
+- [X] Modular internal system configurations (see `package_managers` or `service_managers`)
 
-LOTS more is planned but this is just the groundwork for now.
+Much more is planned but this is what I am focused on for now.
 
 ## Contributing
 
@@ -176,4 +172,4 @@ Note that this is replicatable on ANY distro not specific to goatOS.
 
 ## Authors
 
-This project is created and maintained by me ([Lucas Marta](https://github.com/gloggers99)) and [William Chastain](https://github.com/crazywillbear).
+This project is created and maintained by me ([Lucas Marta](https://github.com/gloggers99)) and (eventually) [William Chastain](https://github.com/crazywillbear).

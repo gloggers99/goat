@@ -2,8 +2,6 @@ use std::string::String;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::fs::{self, DirEntry};
-use std::hash::Hash;
-use std::process::Command;
 use anyhow::{anyhow};
 use nix::unistd::Uid;
 use crate::cache::Cache;

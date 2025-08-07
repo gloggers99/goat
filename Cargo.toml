@@ -20,3 +20,5 @@ nix = { version = "0.30.1", features = ["user"] }
 anyhow = "1.0.98"
 clap = { version = "4.5.42", features = ["derive"] }
 regex = "1.11.1"
+
+from_lua_file_macro = { path = "from_lua_file_macro" }

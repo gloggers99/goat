@@ -1,11 +1,11 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashSet};
 use anyhow::anyhow;
 use mlua::{Lua, Value};
-use std::path::PathBuf;
 use std::process::Command;
-use crate::{goat_lua, include_custom_runtime};
-use crate::from_file::FromFile;
+use from_lua_file_macro::FromLuaFile;
+use crate::{goat_lua};
 
+#[derive(FromLuaFile)]
 pub struct PackageManager {
     /// The name of any applicable package manager binary.
     ///
@@ -45,54 +45,6 @@ pub struct PackageManager {
     core_packages: Vec<String>
 }
 
-impl FromFile for PackageManager {
-    fn from_file(path: &PathBuf) -> anyhow::Result<Self> {
-        let lua = Lua::new();
-
-        if !path.exists() {
-            return Err(anyhow!("Package manager configuration file: \"{}\" does not exist", path.display()));
-        }
-
-        let config_script = std::fs::read_to_string(path)?;
-
-        let globals = lua.globals();
-        include_custom_runtime!(lua, globals);
-
-        lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret package manager configuration file: {}", e))?;
-
-
-        let binary_name = globals.get("binary_name").map_err(|e| anyhow!("{}", e))?;
-        let install_command = globals.get("install_command").map_err(|e| anyhow!("{}", e))?;
-        let remove_command = globals.get("remove_command").map_err(|e| anyhow!("{}", e))?;
-        let full_system_update_command = globals.get("full_system_update_command").map_err(|e| anyhow!("{}", e))?;
-        let list_explicit_packages_command = globals.get("list_explicit_packages_command").map_err(|e| anyhow!("{}", e))?;
-        let list_all_packages_command = globals.get("list_all_packages_command").map_err(|e| anyhow!("{}", e))?;
-
-        let mut core_packages: Vec<String> = vec![];
-
-        if let Ok(core_packages_value) = globals.get::<Value>("core_packages") {
-            if let Some(core_packages_table) = core_packages_value.as_table() {
-                core_packages = core_packages_table.sequence_values::<String>()
-                    .collect::<Result<Vec<_>, _>>()
-                    .map_err(|e| anyhow!("{}", e))?
-            }
-        }
-
-        Ok(PackageManager {
-            binary_name,
-            install_command,
-            remove_command,
-            full_system_update_command,
-            list_explicit_packages_command,
-            list_all_packages_command,
-            core_packages
-        })
-    }
-
-    fn get_binary_name(&self) -> &str {
-        &self.binary_name
-    }
-}
 impl PackageManager {
 /// Get a Vec<String> of explicitly installed packages.
     pub fn explicit_packages(&self) -> anyhow::Result<Vec<String>> {
