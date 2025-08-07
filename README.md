@@ -32,13 +32,17 @@ A meta-distribution with a declarative system configuration.
 
 </div>
 
+> [!CAUTION]
+> This project is a work in progress.
+> 
 <!-- TOC -->
-  * [Fun Screenshots](#fun-screenshots)
   * [What](#what)
   * [Why](#why)
   * [Example](#example)
   * [Features](#features)
   * [Contributing](#contributing)
+  * [Fun Screenshots](#fun-screenshots)
+  * [See Also](#see-also)
   * [Authors](#authors)
 <!-- TOC -->
 
