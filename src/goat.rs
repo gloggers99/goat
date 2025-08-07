@@ -39,7 +39,7 @@ pub fn generate_system_config(package_manager: &PackageManager, path: &PathBuf) 
         .collect::<Vec<String>>()
         .join(",\n");
     
-    fs::write(path, format!("packages = {{\n{}\n}}", explicit_packages))?;
+    fs::write(path, format!("hostname=\"{}\"\n\npackages = {{\n{}\n}}\n", fs::read_to_string("/etc/hostname")?.trim(), explicit_packages))?;
     
     Ok(())
 }
@@ -189,7 +189,7 @@ impl Goat {
         
         let config_file = directories["configuration_directory"].join(&files["config_file"]);
         if !config_file.exists() {
-            log::warn!("Generating configuration file \"{}\"...", cache_file.display());
+            log::warn!("Generating configuration file \"{}\"...", config_file.display());
             generate_system_config(&package_manager, &config_file)?;
         }
         
