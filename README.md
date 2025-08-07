@@ -42,10 +42,6 @@ A meta-distribution with a declarative system configuration.
   * [Authors](#authors)
 <!-- TOC -->
 
-## Fun Screenshots
-
-![](./images/2025-08-05-151242_2560x1600_scrot.png)
-
 ## What
 
 `goat` is a declarative system configuration manager, similar to NixOS. 
@@ -59,9 +55,13 @@ Q: "Do I need to have a fresh distro install?"
 A: Nope. During `goat`'s installation it will compile your current 
 distro settings like your manually installed packages, running services, users, and more.
 
+Q: "Why lua?"
+A: Lua has proven to be an excellent configuration file language. Several other languages have been tested such as
+python, starlark, json, and even toml. The ability to use the lua standard library within your config is awesome as
+well.
 
-\* non-supported distros need a package manager configuration interface created, 
-along with one for your service manager. This is a very simple process.
+\* non-supported distros need a package manager configuration interface created, along with one for your service 
+manager. This is a very simple process.
 
 ## Why
 
@@ -159,6 +159,16 @@ types.
 
 That's pretty much it. Just keep your code clean and try to leave docstrings
 as much as possible.
+
+## Fun Screenshots
+
+![](./images/2025-08-05-151242_2560x1600_scrot.png)
+Note that this is replicatable on ANY distro not specific to goatOS.
+
+## See Also
+
+- **[fastfetch-goat](https://github.com/gloggers99/fastfetch-goat)**: fastfetch with the goat logo built in (hopefully merged into fastfetch soon): 
+- **[NixOS](https://nixos.org/)**: Huge inspiration 
 
 ## Authors
 

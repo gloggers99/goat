@@ -214,13 +214,20 @@ impl Goat {
         if current_hostname != self.config.hostname {
             fs::write(Path::new("/etc/hostname"), format!("{}\n", self.config.hostname))?;
 
-            log::warn!("Changing the hostname will take effect next reboot! See issue #1 on github.")
+            log::warn!("Hostname changed, this will take effect next reboot. See issue #1 on github.")
             // TODO: Do some testing on changing the hostname with systemd as it tends to break 
             //       lots of things like the X server and dbus.
             
             //if !Command::new("sh").arg("-c").arg(&self.service_manager.hostname_reload_command).output()?.status.success() {
             //    return Err(anyhow!("Failed to run \"sh -c {}\"", self.service_manager.hostname_reload_command))
             //}
+        }
+        
+        if let Some(packages) = &self.config.packages {
+            let packages: Vec<&str> = packages.iter().map(|package| package.as_str()).collect();
+            
+            self.package_manager.install(packages.clone())?;
+            self.package_manager.remove_unneeded_packages(packages)?;
         }
         
         Ok(())

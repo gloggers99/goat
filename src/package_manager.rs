@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use anyhow::anyhow;
 use mlua::{Lua, Value};
 use std::path::PathBuf;
@@ -19,6 +19,9 @@ pub struct PackageManager {
     /// `pacman -S {}`
     install_command: String,
     
+    /// Uninstall a package.
+    remove_command: String,
+    
     /// The command to update & upgrade the whole system
     /// 
     /// ex: `pacman -Syu`
@@ -30,7 +33,11 @@ pub struct PackageManager {
     /// command for.
     /// 
     /// ex: `pacman -Qe | cut -d ' ' -f1`
-    list_explicit_packages: String,
+    list_explicit_packages_command: String,
+    
+    /// Command to get a list of ALL packages installed on the system. Including those not
+    /// explicitly installed.
+    list_all_packages_command: String,
     
     /// A list of packages REQUIRED to be installed by the package manager.
     /// 
@@ -56,8 +63,10 @@ impl FromFile for PackageManager {
 
         let binary_name = globals.get("binary_name").map_err(|e| anyhow!("{}", e))?;
         let install_command = globals.get("install_command").map_err(|e| anyhow!("{}", e))?;
+        let remove_command = globals.get("remove_command").map_err(|e| anyhow!("{}", e))?;
         let full_system_update_command = globals.get("full_system_update_command").map_err(|e| anyhow!("{}", e))?;
-        let list_explicit_packages = globals.get("list_explicit_packages").map_err(|e| anyhow!("{}", e))?;
+        let list_explicit_packages_command = globals.get("list_explicit_packages_command").map_err(|e| anyhow!("{}", e))?;
+        let list_all_packages_command = globals.get("list_all_packages_command").map_err(|e| anyhow!("{}", e))?;
 
         let mut core_packages: Vec<String> = vec![];
 
@@ -72,8 +81,10 @@ impl FromFile for PackageManager {
         Ok(PackageManager {
             binary_name,
             install_command,
+            remove_command,
             full_system_update_command,
-            list_explicit_packages,
+            list_explicit_packages_command,
+            list_all_packages_command,
             core_packages
         })
     }
@@ -85,12 +96,12 @@ impl FromFile for PackageManager {
 impl PackageManager {
 /// Get a Vec<String> of explicitly installed packages.
     pub fn explicit_packages(&self) -> anyhow::Result<Vec<String>> {
-        let parts = self.list_explicit_packages.split_whitespace();
+        let parts = self.list_explicit_packages_command.split_whitespace();
         let args: Vec<&str> = parts.collect();
         
         let output = Command::new("sh")
             .arg("-c")
-            .arg(&self.list_explicit_packages)
+            .arg(&self.list_explicit_packages_command)
             .output()?;
         
         // Theoretically this should be safe unless the package
@@ -100,17 +111,38 @@ impl PackageManager {
         Ok(stdout.split_whitespace().map(|x| x.to_owned()).collect())
     }
     
+    pub fn all_packages(&self) -> anyhow::Result<Vec<String>> {
+        let parts: Vec<&str> = self.list_all_packages_command.split_whitespace().collect();
+        
+        let output = Command::new("sh")
+            .arg("-c")
+            .arg(&self.list_all_packages_command)
+            .output()?;
+        
+        let stdout = String::from_utf8(output.stdout)?;
+        
+        Ok(stdout.split_whitespace().map(|x| x.to_owned()).collect())
+    }
+    
     /// Install a list of packages using the PackageManager specification
     pub fn install(&self, packages: Vec<&str>) -> anyhow::Result<()> {
         let command_parts = self.full_system_update_command.split_whitespace();
         
-        // Filter out explicitly installed packages
-        let installed_packages: HashSet<String> = self.explicit_packages()?.into_iter().collect();
+        // Filter out already installed packages
+        let installed_packages: HashSet<String> = self.all_packages()?.into_iter().collect();
         
         let packages: Vec<&str> = packages
             .into_iter()
             .filter(|package| !installed_packages.contains(*package))
             .collect();
+        
+        if packages.is_empty() {
+            log::info!("No new packages.");
+            return Ok(())
+        }
+        
+        log::info!("Installing {} package(s): {}.", packages.len(), packages.join(","));
+        
         // Join all packages into a single space-separated string
         let packages = packages.join(" ");
 
@@ -127,9 +159,47 @@ impl PackageManager {
             .map_err(|e| anyhow!("Failed to execute install command: {}", e))?;
 
         if !output.status.success() {
-            return Err(anyhow!("Install command failed with status: {}", output.status));
+            return Err(anyhow!("Package installation failed with output: \n\n{}", String::from_utf8(output.stderr)?))
         }
         
+        Ok(())
+    }
+
+    pub fn remove_unneeded_packages(&self, explicitly_needed_packages: Vec<&str>) -> anyhow::Result<()> {
+        let explicitly_installed_packages: HashSet<String> = self.explicit_packages()?.into_iter().collect();
+
+        let needed: HashSet<&str> = explicitly_needed_packages.iter().copied().collect();
+        let unneeded_packages: Vec<&str> = explicitly_installed_packages
+            .iter()
+            .filter(|pkg| !needed.contains(pkg.as_str()))
+            .map(|s| s.as_str())
+            .collect();
+        
+        if unneeded_packages.is_empty() {
+            return Ok(())
+        }
+
+        log::info!("Removing {} package(s): {}.", unneeded_packages.len(), unneeded_packages.join(","));
+
+        // Join all packages into a single space-separated string
+        let packages = unneeded_packages.join(" ");
+
+        // Format the command string with the packages
+        let command_str = self.remove_command.replace("{}", &packages);
+
+        let mut parts = command_str.split_whitespace();
+        let cmd = parts.next().ok_or_else(|| anyhow!("Removal command is empty"))?;
+        let args: Vec<&str> = parts.collect();
+
+        let output = Command::new(cmd)
+            .args(&args)
+            .output()
+            .map_err(|e| anyhow!("Failed to execute removal command: {}", e))?;
+
+        if !output.status.success() {
+            return Err(anyhow!("Package removal failed with output: \n\n{}", String::from_utf8(output.stderr)?))
+        }
+
         Ok(())
     }
 }
