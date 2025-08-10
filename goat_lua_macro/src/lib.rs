@@ -112,14 +112,19 @@ pub fn derive_from_lua_file(input: TokenStream) -> TokenStream {
                 
                 let package: mlua::Table = globals.get("package").map_err(|e| anyhow!("{}", e))?;
                 let old_path: String = package.get("path").map_err(|e| anyhow!("{}", e))?;
+                let new_path = path
+                    .parent()
+                    .ok_or_else(|| anyhow!("Invalid path"))?
+                    .to_string_lossy()
+                    .to_string();
+                
                 package.set(
                     "path", 
-                    format!("{};{}/?.lua", old_path, path.to_string_lossy().to_string())).map_err(|e| anyhow!("{}", e)
-                )?;
+                    format!("{};{}/?.lua", old_path, new_path)
+                ).map_err(|e| anyhow!("{}", e))?;
                 
                 let config_script = std::fs::read_to_string(path)?;
                 lua.lua.load(&config_script).exec().map_err(|e| anyhow::anyhow!("Failed to interpret configuration file: {}", e))?;
-                
                 
                 #(#field_extractions)*
                 

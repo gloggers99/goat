@@ -46,10 +46,16 @@ impl Config {
 
         let package: mlua::Table = globals.get("package").map_err(|e| anyhow!("{}", e))?;
         let old_path: String = package.get("path").map_err(|e| anyhow!("{}", e))?;
+        let new_path = path
+            .parent()
+            .ok_or_else(|| anyhow!("Invalid path"))?
+            .to_string_lossy()
+            .to_string();
+        
         package.set(
             "path", 
-            format!("{};{}/?.lua", old_path, path.to_string_lossy().to_string())).map_err(|e| anyhow!("{}", e)
-        )?;
+            format!("{};{}/?.lua", old_path, new_path)
+        ).map_err(|e| anyhow!("{}", e))?;
         
         // The mlua library doesn't seem to be friendly with anyhow so we still need to use map_err 
         // on each Result returning function from them.
