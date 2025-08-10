@@ -1,8 +1,8 @@
 use std::path::Path;
 use anyhow::anyhow;
-use mlua::{Lua, Value};
+use mlua::Value;
 use regex::Regex;
-use crate::{goat_lua, include_custom_runtime, lua_extract_string_variable};
+use goat_lua::GoatLua;
 
 /// `goat`'s configuration file specification.
 /// 
@@ -34,7 +34,7 @@ impl Default for Config {
 impl Config {
     /// Create a `Config` instance from a file path.
     pub fn from_file(path: &Path) -> anyhow::Result<Self> {
-        let lua = Lua::new();
+        let lua = GoatLua::create()?;
         
         if !path.exists() {
             return Err(anyhow!("Config file: \"{}\" does not exist", path.display()))
@@ -42,16 +42,20 @@ impl Config {
         
         let config_script = std::fs::read_to_string(path)?;
 
-        let globals = lua.globals();
-        include_custom_runtime!(lua, globals);
+        let globals = lua.lua.globals();
+
+        let package: mlua::Table = globals.get("package").map_err(|e| anyhow!("{}", e))?;
+        let old_path: String = package.get("path").map_err(|e| anyhow!("{}", e))?;
+        package.set(
+            "path", 
+            format!("{};{}/?.lua", old_path, path.to_string_lossy().to_string())).map_err(|e| anyhow!("{}", e)
+        )?;
         
         // The mlua library doesn't seem to be friendly with anyhow so we still need to use map_err 
         // on each Result returning function from them.
-        lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret configuration file: \n{}\n", e))?;
+        lua.lua.load(&config_script).exec().map_err(|e| anyhow!("Failed to interpret configuration file: \n{}\n", e))?;
         
         let mut config = Config::default();
-        
-        lua_extract_string_variable!(hostname, globals, config);
         
         // libc standards require a lower than 64 length hostname. Unfortunately we need to support 
         // this standard for now. DNS FQDN restrictions have a cap of 255 characters, this might be

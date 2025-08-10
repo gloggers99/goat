@@ -1,8 +1,6 @@
+use goat_lua::GoatLua;
 use anyhow::anyhow;
-
-use from_lua_file_macro::FromLuaFile;
-
-use crate::goat_lua;
+use goat_lua_macro::FromLuaFile;
 
 // Time to unify systemd and openrc...
 

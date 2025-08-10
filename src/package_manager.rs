@@ -1,9 +1,8 @@
+use goat_lua::GoatLua;
 use std::collections::{HashSet};
 use anyhow::anyhow;
-use mlua::{Lua, Value};
 use std::process::Command;
-use from_lua_file_macro::FromLuaFile;
-use crate::{goat_lua};
+use goat_lua_macro::FromLuaFile;
 
 #[derive(FromLuaFile)]
 pub struct PackageManager {

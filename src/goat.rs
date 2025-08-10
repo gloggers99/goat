@@ -134,10 +134,6 @@ impl Goat {
     /// Running with the recache parameter set to true
     /// will reset the cache files.
     pub fn load(recache: bool) -> anyhow::Result<Self> {
-        if !Uid::effective().is_root() {
-            return Err(anyhow!("Goat must be ran with root privileges!"));
-        }
-        
         let directories = Self::get_directories();
         let files = Self::get_files();
         
@@ -205,6 +201,10 @@ impl Goat {
     
     /// This is where 99% of the magic happens.
     pub fn sync(&self) -> anyhow::Result<()> {
+        if !Uid::effective().is_root() {
+            return Err(anyhow!("Sync requires root privileges!"));
+        }
+
         // TODO: We don't want a halfway synced system so in the future we need to containerize our
         //       sync so if an error is thrown we cancel the build and have no side effects.
         

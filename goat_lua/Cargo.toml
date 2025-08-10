@@ -1,0 +1,11 @@
+[package]
+name = "goat_lua"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mlua = { version = "0.11.1", features = ["lua54"] }
+
+anyhow = "1.0.98"
+which = "8.0.0"
+goat_lua_macro = { path = "../goat_lua_macro" }

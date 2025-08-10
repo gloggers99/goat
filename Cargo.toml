@@ -8,8 +8,6 @@ license = "MIT"
 # logging
 log = "0.4.27"
 env_logger = "0.11.8"
-# lua
-mlua = { version = "0.11.1", features = ["lua54"] }
 # json stuff
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.141"
@@ -21,4 +19,7 @@ anyhow = "1.0.98"
 clap = { version = "4.5.42", features = ["derive"] }
 regex = "1.11.1"
 
-from_lua_file_macro = { path = "from_lua_file_macro" }
+goat_lua = { path = "goat_lua" }
+goat_lua_macro = { path = "goat_lua_macro" }
+
+mlua = { version = "0.11.1", features = ["lua54"] }

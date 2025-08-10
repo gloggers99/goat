@@ -2,7 +2,6 @@ mod goat;
 mod package_manager;
 mod cache;
 mod config;
-mod goat_lua;
 mod service_manager;
 mod from_file;
 
