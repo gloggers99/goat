@@ -21,7 +21,7 @@
                ####   ###                                         \)              
              /######  /#                                                          
             /     ###/                                                            
-              by Lucas Marta and William Chastain
+              by Lucas Marta
 ```
 
 A meta-distribution with a declarative system configuration.
@@ -172,4 +172,4 @@ Note that this is replicatable on ANY distro not specific to goatOS.
 
 ## Authors
 
-This project is created and maintained by me ([Lucas Marta](https://github.com/gloggers99)) and (eventually) [William Chastain](https://github.com/crazywillbear).
+This project is created and maintained by [Lucas Marta](https://github.com/gloggers99) 
