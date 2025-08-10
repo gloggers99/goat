@@ -24,7 +24,6 @@ impl Goat {
         // TODO: We don't want a halfway synced system so in the future we need to containerize our
         //       sync so if an error is thrown we cancel the build and have no side effects.
         
-        // TODO: Macroify this later.
         // let stages = stages![ Hostname, Packages ];
         let stages: Vec<Box<dyn Stage>> = stages![
             Hostname,
