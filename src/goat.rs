@@ -13,22 +13,26 @@ use crate::service_manager::ServiceManager;
 /// The Goat struct represents the system in whole.
 pub struct Goat {
     /// Important directories in a map for lookup & more.
-    directories: HashMap<String, PathBuf>,
+    pub directories: HashMap<String, PathBuf>,
     
     /// Important files in a map for lookup & more.
     /// 
     /// The idea is to have the directory section joined with 
     /// a file from the files hashmap. This allows for custom
     /// directory setups later.
-    files: HashMap<String, PathBuf>,
+    pub files: HashMap<String, PathBuf>,
     
-    cache: Cache,
-    package_manager: PackageManager,
-    service_manager: ServiceManager,
-    config: Config
+    pub cache: Cache,
+    pub package_manager: PackageManager,
+    pub service_manager: ServiceManager,
+    pub config: Config
 }
 
-/// Generate a config.lua file
+/// Generate a config.lua file based on your current running system.
+/// 
+/// The following is currently included:
+/// - hostname
+/// - packages
 pub fn generate_system_config(package_manager: &PackageManager, path: &PathBuf) -> anyhow::Result<()> {
     let explicit_packages: String = package_manager
         .explicit_packages()?
@@ -197,37 +201,5 @@ impl Goat {
             service_manager,
             config
         })
-    }
-    
-    /// This is where 99% of the magic happens.
-    pub fn sync(&self) -> anyhow::Result<()> {
-        if !Uid::effective().is_root() {
-            return Err(anyhow!("Sync requires root privileges!"));
-        }
-
-        // TODO: We don't want a halfway synced system so in the future we need to containerize our
-        //       sync so if an error is thrown we cancel the build and have no side effects.
-        
-        let current_hostname = fs::read_to_string("/etc/hostname")?.trim().to_owned();
-        if current_hostname != self.config.hostname {
-            fs::write(Path::new("/etc/hostname"), format!("{}\n", self.config.hostname))?;
-
-            log::warn!("Hostname changed, this will take effect next reboot. See issue #1 on github.")
-            // TODO: Do some testing on changing the hostname with systemd as it tends to break 
-            //       lots of things like the X server and dbus.
-            
-            //if !Command::new("sh").arg("-c").arg(&self.service_manager.hostname_reload_command).output()?.status.success() {
-            //    return Err(anyhow!("Failed to run \"sh -c {}\"", self.service_manager.hostname_reload_command))
-            //}
-        }
-        
-        if let Some(packages) = &self.config.packages {
-            let packages: Vec<&str> = packages.iter().map(|package| package.as_str()).collect();
-            
-            self.package_manager.install(packages.clone())?;
-            self.package_manager.remove_unneeded_packages(packages)?;
-        }
-        
-        Ok(())
     }
 }

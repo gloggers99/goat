@@ -4,6 +4,7 @@ mod cache;
 mod config;
 mod service_manager;
 mod from_file;
+mod sync;
 
 use std::process::exit;
 use clap::Parser;
