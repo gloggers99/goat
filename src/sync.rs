@@ -3,6 +3,11 @@ use std::path::Path;
 use anyhow::anyhow;
 use nix::unistd::Uid;
 use crate::goat::Goat;
+use crate::stage::{Hostname, Packages, Stage, StageResult};
+use crate::stages;
+// sync.rs
+//
+// All logic related to the `-s` sync flag should be placed here.
 
 impl Goat {
     /// This is where 99% of the magic happens.
@@ -18,25 +23,25 @@ impl Goat {
 
         // TODO: We don't want a halfway synced system so in the future we need to containerize our
         //       sync so if an error is thrown we cancel the build and have no side effects.
-
-        let current_hostname = fs::read_to_string("/etc/hostname")?.trim().to_owned();
-        if current_hostname != self.config.hostname {
-            fs::write(Path::new("/etc/hostname"), format!("{}\n", self.config.hostname))?;
-
-            log::warn!("Hostname changed, this will take effect next reboot. See issue #1 on github.")
-            // TODO: Do some testing on changing the hostname with systemd as it tends to break 
-            //       lots of things like the X server and dbus.
-
-            //if !Command::new("sh").arg("-c").arg(&self.service_manager.hostname_reload_command).output()?.status.success() {
-            //    return Err(anyhow!("Failed to run \"sh -c {}\"", self.service_manager.hostname_reload_command))
-            //}
-        }
-
-        if let Some(packages) = &self.config.packages {
-            let packages: Vec<&str> = packages.iter().map(|package| package.as_str()).collect();
-
-            self.package_manager.install(packages.clone())?;
-            self.package_manager.remove_unneeded_packages(packages)?;
+        
+        // TODO: Macroify this later.
+        // let stages = stages![ Hostname, Packages ];
+        let stages: Vec<Box<dyn Stage>> = stages![
+            Hostname,
+            Packages
+        ];
+        
+        for stage in stages {
+            match stage.apply(self) {
+                Ok(StageResult::Done) => {
+                    log::warn!("Stage \"{}\" complete", stage.name())
+                },
+                // Let the user know a stage was skipped.
+                Ok(StageResult::Skipped) => {
+                    log::warn!("Skipped stage \"{}\" as it would have no effect.", stage.name())
+                },
+                Err(e) => return Err(e),
+            }
         }
 
         Ok(())
