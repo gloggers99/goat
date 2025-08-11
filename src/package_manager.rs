@@ -47,9 +47,6 @@ pub struct PackageManager {
 impl PackageManager {
 /// Get a Vec<String> of explicitly installed packages.
     pub fn explicit_packages(&self) -> anyhow::Result<Vec<String>> {
-        let parts = self.list_explicit_packages_command.split_whitespace();
-        let args: Vec<&str> = parts.collect();
-        
         let output = Command::new("sh")
             .arg("-c")
             .arg(&self.list_explicit_packages_command)
@@ -63,8 +60,6 @@ impl PackageManager {
     }
     
     pub fn all_packages(&self) -> anyhow::Result<Vec<String>> {
-        let parts: Vec<&str> = self.list_all_packages_command.split_whitespace().collect();
-        
         let output = Command::new("sh")
             .arg("-c")
             .arg(&self.list_all_packages_command)
@@ -77,8 +72,6 @@ impl PackageManager {
     
     /// Install a list of packages using the PackageManager specification
     pub fn install(&self, packages: Vec<&str>) -> anyhow::Result<()> {
-        let command_parts = self.full_system_update_command.split_whitespace();
-        
         // Filter out already installed packages
         let installed_packages: HashSet<String> = self.all_packages()?.into_iter().collect();
         

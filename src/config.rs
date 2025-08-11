@@ -19,14 +19,14 @@ pub struct Config {
     /// The list of packages the user explicitly wants installed.
     /// Dependency packages will be pulled in implicitly by their package
     /// manager.
-    pub packages: Option<Vec<String>>
+    pub packages: Option<Vec<String>>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Config {
             hostname: String::from("goatOS"),
-            packages: None
+            packages: None,
         }
     }
 }

@@ -1,9 +1,10 @@
-use std::fs;
-use std::path::Path;
+use std::fs::DirEntry;
+use std::path::PathBuf;
 use anyhow::anyhow;
 use nix::unistd::Uid;
+use goat_lua::GoatLua;
 use crate::goat::Goat;
-use crate::stage::{Hostname, Packages, Stage, StageResult};
+use crate::stage::{CustomStage, Hostname, Packages, Stage, StageResult};
 use crate::stages;
 // sync.rs
 //
@@ -24,11 +25,20 @@ impl Goat {
         // TODO: We don't want a halfway synced system so in the future we need to containerize our
         //       sync so if an error is thrown we cancel the build and have no side effects.
         
-        // let stages = stages![ Hostname, Packages ];
-        let stages: Vec<Box<dyn Stage>> = stages![
+        let mut stages = stages![
             Hostname,
             Packages
         ];
+        
+        let custom_stages: Vec<DirEntry> = self.directories["custom_stages"].read_dir()?.collect::<Result<_, _>>()?;
+        
+        for stage in custom_stages {
+            stages.push(Box::new(
+                CustomStage {
+                    path: PathBuf::from(stage.path()),
+                }
+            ));
+        }
         
         for stage in stages {
             match stage.apply(self) {

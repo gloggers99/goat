@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use std::fs::{self, DirEntry};
 use anyhow::{anyhow};
-use nix::unistd::Uid;
 use crate::cache::Cache;
 use crate::config::Config;
 use crate::from_file::FromFile;
@@ -58,7 +57,9 @@ impl Goat {
                 // Location of package manager configuration files.
                 (String::from("package_manager_configuration_directory"), PathBuf::from("package_managers")),
                 // Location of service manager configuration files.
-                (String::from("service_manager_configuration_directory"), PathBuf::from("service_managers"))
+                (String::from("service_manager_configuration_directory"), PathBuf::from("service_managers")),
+                // Location of custom stages
+                (String::from("custom_stages"), PathBuf::from("custom_stages"))
             ])
         } else {
             HashMap::from([
@@ -69,7 +70,9 @@ impl Goat {
                 // Location of package manager configuration files.
                 (String::from("package_manager_configuration_directory"), PathBuf::from("/var/goat/package_managers")),
                 // Location of service manager configuration files.
-                (String::from("service_manager_configuration_directory"), PathBuf::from("/var/goat/service_managers"))
+                (String::from("service_manager_configuration_directory"), PathBuf::from("/var/goat/service_managers")),
+                // Location of custom stages
+                (String::from("custom_stages"), PathBuf::from("/var/goat/custom_stages"))
             ])
         }
     }

@@ -1,6 +1,8 @@
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use anyhow::anyhow;
+use mlua::ObjectLike;
+use goat_lua::GoatLua;
 use crate::goat::Goat;
 
 pub enum StageResult {
@@ -8,26 +10,45 @@ pub enum StageResult {
     Skipped
 }
 
-/// Seperating each system management layer as a stage allows for easy debugging and lua plugins.
+/// Seperating each system management layer as a stage allows for easy debugging and modularity.
 pub trait Stage {
     /// The stage's name.
     /// 
     /// This is used for debugging and to inform the user about which stage specifically failed,
     /// which stages are being skipped, and more.
-    fn name(&self) -> &'static str;
+    fn name(&self) -> String;
     
     /// Apply the given stage to the system.
     fn apply(&self, goat: &Goat) -> anyhow::Result<StageResult>;
+}
 
-    // Maybe we can apply the pluggable lua modules here. Stringify the struct's name then map a 
-    // directory for plugins.
+/// A custom stage based on a lua file.
+pub struct CustomStage {
+    pub path: PathBuf
+}
+
+impl Stage for CustomStage {
+    fn name(&self) -> String { 
+        // If this fails I don't know what to tell you.
+        self.path.file_name().unwrap().to_string_lossy().to_string()
+    }
+    
+    fn apply(&self, goat: &Goat) -> anyhow::Result<StageResult> {
+        let lua = GoatLua::create()?;
+        lua.lua.load(&*self.path).exec().map_err(|e| anyhow::anyhow!("{}", e))?;
+        let globals = lua.lua.globals();
+        let stage = globals.get::<mlua::Table>("stage").map_err(|e| anyhow!("{}", e))?;
+        stage.call_function::<()>("apply", ()).map_err(|e| anyhow!("{}", e))?;
+        
+        Ok(StageResult::Done)
+    }
 }
 
 /// Hostname stage.
 /// 
 /// Synchronize hostname to configuration hostname.
 pub struct Hostname {} impl Stage for Hostname {
-    fn name(&self) -> &'static str { "Hostname" }
+    fn name(&self) -> String { String::from("Hostname") }
     fn apply(&self, goat: &Goat) -> anyhow::Result<StageResult> {
         let current_hostname = fs::read_to_string("/etc/hostname")
             .map_err(|e| anyhow!("{}", e))?
@@ -58,7 +79,7 @@ pub struct Hostname {} impl Stage for Hostname {
 /// Install packages and remove unneeded packages. This stage will only fail if the package manager
 /// functions return an error.
 pub struct Packages {} impl Stage for Packages {
-    fn name(&self) -> &'static str { "Packages" }
+    fn name(&self) -> String { String::from("Packages") }
     fn apply(&self, goat: &Goat) -> anyhow::Result<StageResult> {
         if let Some(packages) = &goat.config.packages {
             let packages: Vec<&str> = packages.iter().map(|package| package.as_str()).collect();
@@ -73,6 +94,12 @@ pub struct Packages {} impl Stage for Packages {
     }
 }
 
+/// Shortcut for creating an array of stages
+/// 
+/// Ex:
+/// ```
+/// let stages = stages![ Hostname, Packages ];
+/// ```
 #[macro_export]
 macro_rules! stages {
     [$($stage:ident),*] => {
